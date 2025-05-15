@@ -31,7 +31,7 @@
 
 ### Framework Integration
 #### Direct Integration (Recommended)
-##### Just place the script in your index.html file:
+##### Just place the script in any type of framework(React Js,Vue Js,Angular,Next Js)  index.html file:
 
 ```html
 <!DOCTYPE html>
@@ -60,7 +60,7 @@
 </html>
 ```
 
-### Framework-Specific Integrations
+### Framework-Specific Integrations 
 #### For React Js Integration
 ```jsx
 
