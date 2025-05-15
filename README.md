@@ -1,12 +1,13 @@
 # OmadaChat
-Quick Start
+
+## Quick Start
 Adding the Omada Chat Widget to your website is simple:
 
-1.Add the script to your HTML:
+###  1.Add the script to your HTML:
 
-<script src="https://cdn.jsdelivr.net/gh/bhargavram-fission/deepchat@254e427/deepchat.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/bhargavram-fission/OmadaChat/OmadaCDN.js"></script>
 
-2.Initialize the widget with your configuration:
+ ### 2.Initialize the widget with your configuration:
 
 <script>
   document.addEventListener('DOMContentLoaded', async function() {
@@ -21,9 +22,10 @@ Adding the Omada Chat Widget to your website is simple:
   });
 </script>
 
-Framework Integration
+## Framework Integration
 The simplest way to integrate the Omada Chat Widget with any framework is by adding the script directly to your index.html file. This approach has been tested and works reliably across all major frameworks.
 Direct Integration (Recommended)
+
 For any framework (React, Vue, Angular, Next.js, Svelte, etc.), you can add the widget by including the script in your main HTML file:
 
 
