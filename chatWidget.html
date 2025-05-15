@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Omada Chat Widget Demo</title>
+</head>
+<body>
+  <h1>Omada Chat Widget Demo</h1>
+  <p>Click on the chat bubble in the corner to start chatting!</p>
+  <script src="https://cdn.jsdelivr.net/gh/bhargavram-fission/deepchat@254e427/deepchat.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async function() {
+      if (window.OmadaChat) {
+        const chat = await window.OmadaChat.init({
+          agentId: 'd78bcf35-eb6e-4080-9ae3-0d6950457cfd',
+          workspaceId: 'gb123',
+          accessToken: 'eyJraWQiOiJyMFhGUXdERitVRnpHQnNFWU1ycEdiYnRkelU4TEtqdWxPZE5iQXBxQ1dNPSIsImFsZyI6IlJTMjU2In0.eyJzdWIiOiIyODIxMDM3MC0wMDgxLTcwMjktZGI3MC1hYjg1MDhkOWZmNWUiLCJpc3MiOiJodHRwczpcL1wvY29nbml0by1pZHAudXMtd2VzdC0yLmFtYXpvbmF3cy5jb21cL3VzLXdlc3QtMl9pMFJhWWNESHIiLCJjbGllbnRfaWQiOiIzM2l0OGIxcm5kaDM4OGRvOXA2bGxiOGd1MiIsIm9yaWdpbl9qdGkiOiJkYWZkNzg0NC1kMzJhLTQ2M2UtOTgyMC00M2RhNTM2MGYwODEiLCJldmVudF9pZCI6ImI2ZTFmZGZlLTcyNGItNDhlYS1iOTU5LWE0ZGI5MjNlMzVhOCIsInVzZXJfaWQiOiIyN2E0MTI2MS02NWIyLTRlMWYtOWU3Zi1hOWQ1ZTE2ODdkZmQiLCJ0b2tlbl91c2UiOiJhY2Nlc3MiLCJzY29wZSI6ImF3cy5jb2duaXRvLnNpZ25pbi51c2VyLmFkbWluIiwiYXV0aF90aW1lIjoxNzQ3MjgyODczLCJleHAiOjE3NDcyODY0NzIsImlhdCI6MTc0NzI4Mjg3MywianRpIjoiMGQ0YjRlN2QtZjExNy00MTQyLTlkYWQtMGMyMmYxY2FjMTQ5IiwiYWNjZXNzX2RvbWFpbl9tZW1iZXJzaGlwcyI6eyJ1c2VycyI6eyJiOTE2MWFmOC01ZTA3LTRmYmQtYWQ2Ni04N2JkZWExM2E2OTIiOlsiaWRlbnRpdHkiXX19LCJ1c2VybmFtZSI6IjI4MjEwMzcwLTAwODEtNzAyOS1kYjcwLWFiODUwOGQ5ZmY1ZSJ9.YbCvf342puPKxT4JlCk4kmmliXfrzYAVEZGcNNhv6jyBC_qpDoL9n9Nuhw7Xvsr15vAFWUmY_Rgs0h3OhaygSBhsY9iQg8nYH4dE3hjjOOBumc7evT-Hjx-Jc8Rhfb-YC7TlvinimWiR5GBDyxuh-oZd3T08hs8RGEpXKCY52uLn1NhDeTB5i_ffc7mE8X_6K9SoBHQowrxcIjhPw7NfzFHA69nqzdlDLhlOIU75xSSLxsRRqiplWazuJda2RtLFMiA1DMP7oS8GcaNuHX5Isvs1eaMu_WauQDXH81XWSi2HrZk1duwxwsrnm0hBEmg3Ol-ZEl85N6f2uXq0CWjiVg',
+        });
+      }
+    });
+  </script>
+</body>
+</html>
