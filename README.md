@@ -10,7 +10,7 @@
 #### 1. Add the script to your HTML
 
 ```html 
-  <script src="https://cdn.jsdelivr.net/gh/bhargavram-fission/OmadaChat/OmadaCDN.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/bhargavram-fission/OmadaChat@b253acd/OmadaCDN.js"></script>
  ```
 
 #### 2. Initialize the widget with your configuration
