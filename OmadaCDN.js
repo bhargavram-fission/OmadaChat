@@ -1,10 +1,11 @@
 /**
  * Omada Chat Widget - A customizable chat interface for websites
- * Version: 1.0.0
+ * Version: 1.1.0
  * 
  * This script creates a floating chat widget that can be easily integrated into any website.
  * It provides configuration options for appearance, behavior, and connection to backend services.
  * Supports SSE streaming and can be used with any framework.
+ * Supports loading configuration from API by workspaceId.
  */
 
 (function() {
@@ -192,6 +193,8 @@
           display: none !important;
           pointer-events: none !important;
         }
+        
+      
       `;
       document.head.appendChild(style);
     }
@@ -312,6 +315,7 @@
     }, 500);
   }
 
+
   // Create the chat widget UI elements
   function createChatElements(config) {
     // Create chat toggle button
@@ -321,6 +325,9 @@
     chatToggle.innerHTML = config.toggleText;
     chatToggle.style.backgroundColor = config.toggleColor;
     document.body.appendChild(chatToggle);
+
+    // Create loading spinner
+
 
     // Create chat container
     const chatContainer = document.createElement('div');
@@ -523,6 +530,27 @@
     return deepChat;
   }
 
+  // Fetch configuration from API by workspaceId
+  async function fetchConfigFromAPI(workspaceId, baseUrl) {
+    const apiUrl = `${baseUrl || 'http://35.91.152.27:8000'}/chat/workspaces/${workspaceId}/chat-ui-config`;
+    
+    try {
+      const response = await fetch(apiUrl);
+      
+      if (!response.ok) {
+        console.warn(`Failed to fetch config for workspaceId: ${workspaceId}. Status: ${response.status}`);
+        return null;
+      }
+      
+      const config = await response.json();
+      console.log('Loaded config from API:', config);
+      return config;
+    } catch (error) {
+      console.warn(`Error fetching config for workspaceId: ${workspaceId}`, error);
+      return null;
+    }
+  }
+
   // Load deep-chat web component script
   function loadDeepChatScript() {
     return new Promise((resolve, reject) => {
@@ -543,9 +571,54 @@
     });
   }
 
+  // Apply API config to the default config
+  function applyAPIConfig(defaultConfig, apiConfig) {
+    // Create a deep copy of the default config
+    const mergedConfig = JSON.parse(JSON.stringify(defaultConfig));
+    
+    // If no API config, return the default
+    if (!apiConfig) {
+      return mergedConfig;
+    }
+    
+    // Preserve essential connection settings
+    const preserveKeys = ['stream', 'websocket', 'connectUrl', 'agentId', 'workspaceId', 'accessToken'];
+    const connectionSettings = {};
+    
+    // Save essential connection settings
+    preserveKeys.forEach(key => {
+      if (mergedConfig[key] !== undefined) {
+        connectionSettings[key] = mergedConfig[key];
+      }
+    });
+    
+    // Merge API config with defaults
+    Object.keys(apiConfig).forEach(key => {
+      // Deeply merge nested objects like messageStyles
+      if (typeof apiConfig[key] === 'object' && apiConfig[key] !== null && !Array.isArray(apiConfig[key]) && 
+          typeof mergedConfig[key] === 'object' && mergedConfig[key] !== null) {
+        mergedConfig[key] = { ...mergedConfig[key], ...apiConfig[key] };
+      } else {
+        mergedConfig[key] = apiConfig[key];
+      }
+    });
+    
+    // Restore essential connection settings
+    preserveKeys.forEach(key => {
+      if (connectionSettings[key] !== undefined) {
+        mergedConfig[key] = connectionSettings[key];
+      }
+    });
+    
+    return mergedConfig;
+  }
+
   // Initialize the chat widget
   window.OmadaChat = {
     init: async function(userConfig = {}) {
+      addViewportMeta();
+      addStyles();
+      
       // Load deep-chat script
       try {
         await loadDeepChatScript();
@@ -554,14 +627,19 @@
         return null;
       }
       
-      // Add viewport meta tag
-      addViewportMeta();
+      // Try to fetch config from API if workspaceId is provided
+      let apiConfig = null;
+      if (userConfig.workspaceId) {
+        try {
+          apiConfig = await fetchConfigFromAPI(userConfig.workspaceId, userConfig.baseUrl);
+        } catch (error) {
+          console.warn('Failed to fetch config from API, using defaults:', error);
+        }
+      }
       
-      // Add default styles
-      addStyles();
-      
-      // Merge default config with user config
-      const config = { ...DEFAULT_CONFIG, ...userConfig };
+      // Merge configs: DEFAULT_CONFIG < apiConfig < userConfig
+      let baseConfig = applyAPIConfig(DEFAULT_CONFIG, apiConfig);
+      const config = { ...baseConfig, ...userConfig };
       
       // Create elements
       const deepChat = createChatElements(config);
@@ -581,6 +659,8 @@
       elements.chatClose.addEventListener('click', hideChat);
       window.addEventListener('resize', () => applyResponsiveStyles(config));
       
+   
+      
       // Return public API
       return {
         show: () => showChat(config),
@@ -596,6 +676,33 @@
           Object.assign(config, newConfig);
           applyPositionStyles(config);
           applyResponsiveStyles(config);
+        },
+        reloadConfig: async () => {
+          if (config.workspaceId) {
+            try {
+              const newApiConfig = await fetchConfigFromAPI(config.workspaceId, config.baseUrl);
+              if (newApiConfig) {
+                const updatedConfig = applyAPIConfig(config, newApiConfig);
+                Object.assign(config, updatedConfig);
+                
+                // Update UI elements with new config
+                elements.chatToggle.innerHTML = config.toggleText;
+                elements.chatToggle.style.backgroundColor = config.toggleColor;
+                elements.chatHeader.style.backgroundColor = config.headerColor;
+                
+                // Update deep-chat configuration
+                configureDeepChat(elements.deepChat, config);
+                
+                // Update positions and styles
+                applyPositionStyles(config);
+                applyResponsiveStyles(config);
+              }
+            } catch (error) {
+              console.error('Failed to reload config:', error);
+            } finally {
+              console.log('Reloaded config:', config);
+            }
+          }
         }
       };
     }
