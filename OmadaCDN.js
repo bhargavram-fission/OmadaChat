@@ -531,13 +531,13 @@
   }
 
   // Fetch configuration from API by workspaceId
-  async function fetchConfigFromAPI(workspaceId, baseUrl) {
-    const apiUrl = `${baseUrl || 'http://35.91.152.27:8000'}/chat/workspaces/${workspaceId}/chat-ui-config`;
+  async function fetchConfigFromAPI(workspaceId) {
+    const apiUrl = `https://wvetisz2v3.execute-api.us-west-2.amazonaws.com/dev/chat/workspaces/${workspaceId}/chat-ui-config`;
     
     try {
       const response = await fetch(apiUrl);
       
-      if (!response.ok) {
+      if (!response.ok) { 
         console.warn(`Failed to fetch config for workspaceId: ${workspaceId}. Status: ${response.status}`);
         return null;
       }
@@ -631,7 +631,7 @@
       let apiConfig = null;
       if (userConfig.workspaceId) {
         try {
-          apiConfig = await fetchConfigFromAPI(userConfig.workspaceId, userConfig.baseUrl);
+          apiConfig = await fetchConfigFromAPI(userConfig.workspaceId);
         } catch (error) {
           console.warn('Failed to fetch config from API, using defaults:', error);
         }
@@ -680,7 +680,7 @@
         reloadConfig: async () => {
           if (config.workspaceId) {
             try {
-              const newApiConfig = await fetchConfigFromAPI(config.workspaceId, config.baseUrl);
+              const newApiConfig = await fetchConfigFromAPI(config.workspaceId);
               if (newApiConfig) {
                 const updatedConfig = applyAPIConfig(config, newApiConfig);
                 Object.assign(config, updatedConfig);
