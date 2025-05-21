@@ -1,32 +1,38 @@
 /**
  * Omada Chat Widget - A customizable chat interface for websites
- * Version: 1.1.0
+ * Version: 1.2.0
  * 
  * This script creates a floating chat widget that can be easily integrated into any website.
  * It provides configuration options for appearance, behavior, and connection to backend services.
  * Supports SSE streaming and can be used with any framework.
  * Supports loading configuration from API by workspaceId.
+ * Enhanced with proper thread ID management for conversation continuity.
  */
 
 (function() {
   // Prevent multiple initializations
   if (window.OmadaChatLoaded) return;
   window.OmadaChatLoaded = true;
+  
+  // Initialize state variables
+  window.currentResponse = '';
+  window.currentThreadId = null;
+  window.messageHistory = [];
 
   // Default configuration
   const DEFAULT_CONFIG = {
     toggleText: "💬",
-    introMessage: "Chat will attempt to send messages to the server. Type something!",
+    introMessage: "Thank you for contacting us. This is Ana, your friendly AI assistant. How can I assist you today?",
     websocket: false,
     stream: true,
     headerTitle: "OmadaAI Assistant!",
-    headerSubTitle: "How can I help you?",
-    headerColor: "#0057F3",
-    toggleColor: "#0057F3",
+    headerSubTitle: "Ana",
+    headerColor: "#2356EA",
+    toggleColor: "#2356EA",
     position: "bottom-right",
     chatContainerPosition: "bottom-right",
     avatars: true,
-    customizeAvatarImageForAI: null,
+    customizeAvatarImageForAI: 'https://omada-public-assets.s3.us-east-2.amazonaws.com/paula.png',
     customizeAvatarImageForUser: null,
     errorMessages: {
       displayServiceErrorMessages: false,
@@ -193,8 +199,6 @@
           display: none !important;
           pointer-events: none !important;
         }
-        
-      
       `;
       document.head.appendChild(style);
     }
@@ -315,7 +319,6 @@
     }, 500);
   }
 
-
   // Create the chat widget UI elements
   function createChatElements(config) {
     // Create chat toggle button
@@ -325,9 +328,6 @@
     chatToggle.innerHTML = config.toggleText;
     chatToggle.style.backgroundColor = config.toggleColor;
     document.body.appendChild(chatToggle);
-
-    // Create loading spinner
-
 
     // Create chat container
     const chatContainer = document.createElement('div');
@@ -393,7 +393,7 @@
     return null;
   }
 
-  // Configure the deep-chat element
+  // Configure the deep-chat element with proper streaming and thread ID support
   function configureDeepChat(deepChat, config) {
     // Handle avatars configuration
     if (config.avatars) {
@@ -514,18 +514,109 @@
     if (config.accessToken) {
       headers.Authorization = `Bearer ${config.accessToken}`;
     }
+
+    // Request interceptor to handle thread_id in requests
+    const requestInterceptor = `(payload) => {
+      // Get the current thread ID if available
+      const threadId = window.currentThreadId || '';
+      
+      // Log the current thread ID being used
+      console.log('Using Thread ID:', threadId);
+      
+      // Create a properly structured body with thread_id
+      const body = {
+        messages: payload.body.messages || payload.text || "{{text}}",
+        format: "string",
+        thread_id: threadId
+      };
+      
+      // Return the modified payload with updated body
+      return {
+        ...payload,
+        body: body
+      };
+    }`;
     
+    // Response interceptor to extract thread_id from responses
+    const responseInterceptor = `(response) => {
+      // Check if response contains thread_id
+      let threadId = null;
+      
+      if (response && response.thread_id) {
+        threadId = response.thread_id;
+      } else if (response && response.details && response.details.thread_id) {
+        threadId = response.details.thread_id;
+      } else if (response && response.response && response.response.thread_id) {
+        threadId = response.response.thread_id;
+      }
+      
+      // Store thread_id if found
+      if (threadId) {
+        window.currentThreadId = threadId;
+        console.log('Current Thread ID:', window.currentThreadId);
+        
+        // Dispatch a custom event for external code
+        const event = new CustomEvent('omada-thread-updated', {
+          detail: { threadId: threadId }
+        });
+        document.dispatchEvent(event);
+      }
+      
+      // Store response content if available
+      if (response && response.text) {
+        window.currentResponse = response.text;
+      }
+      
+      return response;
+    }`;
+
     // Connect configuration with streaming support
     const connectConfig = {
       url: connectUrl,
       method: "POST",
       websocket: config.websocket || false,
       stream: config.stream || true,
-      headers: headers
+      headers: headers,
+      body: {
+        messages: "{{text}}",  // This is a placeholder that deep-chat will replace
+        format: "string",
+        thread_id: ''  // Will be populated by request interceptor
+      }
     };
     
+    // Set the interceptors and connect config
+    deepChat.setAttribute('requestInterceptor', requestInterceptor);
+    deepChat.setAttribute('responseInterceptor', responseInterceptor);
     deepChat.setAttribute('connect', JSON.stringify(connectConfig));
     deepChat.setAttribute('introMessage', `{"text": "${config.introMessage}"}`);
+    
+    // Set up event listeners for message tracking
+    deepChat.addEventListener('deepchat-message-response', (event) => {
+      const response = event.detail;
+      
+      // Update history with the latest message
+      if (window.messageHistory && Array.isArray(window.messageHistory)) {
+        window.messageHistory.push({
+          role: 'assistant',
+          content: response.text || ''
+        });
+      }
+    });
+    
+    deepChat.addEventListener('deepchat-message-request', (event) => {
+      const request = event.detail;
+      
+      // Initialize message history if not exists
+      if (!window.messageHistory) {
+        window.messageHistory = [];
+      }
+      
+      // Add user message to history
+      window.messageHistory.push({
+        role: 'user',
+        content: request.text
+      });
+    });
     
     return deepChat;
   }
@@ -550,6 +641,8 @@
       return null;
     }
   }
+
+
 
   // Load deep-chat web component script
   function loadDeepChatScript() {
@@ -659,8 +752,6 @@
       elements.chatClose.addEventListener('click', hideChat);
       window.addEventListener('resize', () => applyResponsiveStyles(config));
       
-   
-      
       // Return public API
       return {
         show: () => showChat(config),
@@ -703,8 +794,36 @@
               console.log('Reloaded config:', config);
             }
           }
+        },
+        getThreadId: () => window.currentThreadId,
+        resetThread: () => {
+          window.currentThreadId = null;
+          window.messageHistory = [];
+          console.log('Thread reset');
+          
+          // Dispatch thread reset event
+          const event = new CustomEvent('omada-thread-reset');
+          document.dispatchEvent(event);
+          
+          return true;
         }
       };
     }
   };
+
+  // Set up global event listener for deep-chat events
+  document.addEventListener('DOMContentLoaded', () => {
+    // Listen for deep-chat response events
+    document.addEventListener('deepchat-response', (event) => {
+      const response = event.detail;
+      
+      // Extract and broadcast thread ID if available
+      if (window.currentThreadId) {
+        const threadEvent = new CustomEvent('omada-thread-updated', {
+          detail: { threadId: window.currentThreadId }
+        });
+        document.dispatchEvent(threadEvent);
+      }
+    });
+  });
 })();
