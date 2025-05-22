@@ -1,12 +1,13 @@
 /**
  * Omada Chat Widget - A customizable chat interface for websites
- * Version: 1.2.0
+ * Version: 1.2.1 - Fixed image overflow issues
  * 
  * This script creates a floating chat widget that can be easily integrated into any website.
  * It provides configuration options for appearance, behavior, and connection to backend services.
  * Supports SSE streaming and can be used with any framework.
  * Supports loading configuration from API by workspaceId.
  * Enhanced with proper thread ID management for conversation continuity.
+ * Fixed image overflow issues in chat messages.
  */
 
 (function() {
@@ -18,10 +19,11 @@
   window.currentResponse = '';
   window.currentThreadId = null;
   window.messageHistory = [];
+  
 
   // Default configuration
   const DEFAULT_CONFIG = {
-    toggleText: "💬",
+    toggleText: "ðŸ’¬",
     introMessage: "Thank you for contacting us. This is Ana, your friendly AI assistant. How can I assist you today?",
     websocket: false,
     stream: true,
@@ -54,7 +56,16 @@
         shared: {bubble: {color: "white"}},
         ai: { bubble: { backgroundColor: "#F3F5F7",color:'#000000',padding:'10px' } },  
         user: { bubble: { backgroundColor: "#0057F3" } }  
-      }
+      },
+     "loading": {
+      "history": {
+        "full": {
+          "styles": {"outerContainer": {"marginTop": "28px"}},
+          "html": "<div class=\"lds-ripple\"><div></div><div></div></div>"
+        },
+        "small": {
+          "styles": {"outerContainer": {"marginTop": "-10px", "marginBottom": "50px"}}
+  }}}
     }
   };
 
@@ -134,7 +145,7 @@
         }
 
         .omada-chat-header {
-          background-color: #0566ff;
+          background-color: #2356EA;
           color: white;
           padding: 12px 16px;
           display: flex;
@@ -445,7 +456,7 @@
     deepChat.setAttribute('inputAreaStyle', '{"backgroundColor": "transparent", "borderTop":"1px solid #fdfdfd", "width": "100%"}');
     deepChat.setAttribute("errorMessages", JSON.stringify(config.errorMessages));
     
-    // Add auxiliary styles for scrollbar and mobile responsiveness
+    // Enhanced auxiliary styles with comprehensive image handling
     const auxiliaryStyle = `
       ::-webkit-scrollbar {
         height: 10px;
@@ -455,6 +466,50 @@
         background-color: #3b82f6;
         border-radius: 5px;
       }
+      
+      /* Image overflow fixes */
+      .message-content img {
+        max-width: 100% !important;
+        height: auto !important;
+        object-fit: contain !important;
+        border-radius: 8px !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+      }
+      
+      .message-container img {
+        max-width: 100% !important;  
+        height: auto !important;
+        object-fit: contain !important;
+        border-radius: 8px !important;
+      }
+      
+      /* Ensure message bubbles contain images properly */
+      .message-bubble img {
+        max-width: 100% !important;
+        width: auto !important;
+        height: auto !important;
+        display: block !important;
+        margin: 4px 0 !important;
+        border-radius: 6px !important;
+      }
+      
+      /* Handle different image container classes that deep-chat might use */
+      [class*="image"] img,
+      [class*="media"] img,
+      .deep-chat-image img,
+      .chat-image img {
+        max-width: 100% !important;
+        height: auto !important;
+        object-fit: contain !important;
+        border-radius: 8px !important;
+      }
+      
+      /* Prevent images from breaking layout */
+      * img {
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      
       @media screen and (max-width: 768px) {
         .message-container {
           max-width: 100% !important;
@@ -462,7 +517,79 @@
         .message-content {
           max-width: calc(100% - 20px) !important;
         }
+        
+        /* Mobile specific image constraints */
+        .message-content img,
+        .message-container img,
+        .message-bubble img {
+          max-width: calc(100% - 10px) !important;
+          max-height: 200px !important;
+          object-fit: contain !important;
+        }
       }
+      
+      @media screen and (max-width: 480px) {
+        /* Extra small screens */
+        .message-content img,
+        .message-container img,
+        .message-bubble img {
+          max-width: calc(100% - 5px) !important;
+          max-height: 150px !important;
+        }
+      }
+         .lds-ripple {
+      color: #1c4c5b
+    }
+    .lds-ripple,
+    .lds-ripple div {
+      box-sizing: border-box;
+    }
+    .lds-ripple {
+      display: inline-block;
+      position: relative;
+      width: 80px;
+      height: 80px;
+    }
+    .lds-ripple div {
+      position: absolute;
+      border: 4px solid currentColor;
+      opacity: 1;
+      border-radius: 50%;
+      animation: lds-ripple 1s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+    }
+    .lds-ripple div:nth-child(2) {
+      animation-delay: -0.5s;
+    }
+    @keyframes lds-ripple {
+      0% {
+        top: 36px;
+        left: 36px;
+        width: 8px;
+        height: 8px;
+        opacity: 0;
+      }
+      4.9% {
+        top: 36px;
+        left: 36px;
+        width: 8px;
+        height: 8px;
+        opacity: 0;
+      }
+      5% {
+        top: 36px;
+        left: 36px;
+        width: 8px;
+        height: 8px;
+        opacity: 1;
+      }
+      100% {
+        top: 0;
+        left: 0;
+        width: 80px;
+        height: 80px;
+        opacity: 0;
+      }
+    }
     `;
     deepChat.setAttribute('auxiliaryStyle', auxiliaryStyle);
 
@@ -490,8 +617,24 @@
     };
     deepChat.setAttribute('textInput', JSON.stringify(textInputConfig));
     
-    // Message styles
-    deepChat.setAttribute('messageStyles', JSON.stringify(config.messageStyles));
+    
+    // Enhanced message styles with image container styling
+    const enhancedMessageStyles = {
+      ...config.messageStyles,
+      default: {
+        ...config.messageStyles.default,
+        shared: {
+          ...config.messageStyles.default.shared,
+          bubble: {
+            ...config.messageStyles.default.shared.bubble,
+            wordWrap: "break-word",
+            overflow: "hidden",
+            maxWidth: "100%"
+          }
+        }
+      }
+    };
+    deepChat.setAttribute('messageStyles', JSON.stringify(enhancedMessageStyles));
 
     // Submit button styles
     deepChat.setAttribute('submitButtonStyles', '{' +
@@ -519,7 +662,7 @@
     const requestInterceptor = `(payload) => {
       // Get the current thread ID if available
       const threadId = window.currentThreadId || '';
-      
+      localStorage.setItem('omada-threadId', threadId);
       // Log the current thread ID being used
       console.log('Using Thread ID:', threadId);
       
@@ -554,7 +697,8 @@
       if (threadId) {
         window.currentThreadId = threadId;
         console.log('Current Thread ID:', window.currentThreadId);
-        
+              localStorage.setItem('omada-threadId', window.currentThreadId);
+
         // Dispatch a custom event for external code
         const event = new CustomEvent('omada-thread-updated', {
           detail: { threadId: threadId }
@@ -570,6 +714,19 @@
       return response;
     }`;
 
+      const storedThreadId = window.currentThreadId 
+// Check if threadId is available in local storage
+if (storedThreadId) {
+    fetchChatHistory(config, storedThreadId).then(history => {
+        if (history && history.messages) {
+            // Use the actual history from API instead of hardcoded messages
+            deepChat.setAttribute('history', JSON.stringify(history.messages));
+            console.log('ðŸ“ Set chat history from API:', history);
+        }
+    }).catch(error => {
+        console.error('âŒ Failed to load chat history:', error);
+    });
+}
     // Connect configuration with streaming support
     const connectConfig = {
       url: connectUrl,
@@ -623,7 +780,7 @@
 
   // Fetch configuration from API by workspaceId
   async function fetchConfigFromAPI(workspaceId) {
-    const apiUrl = `https://wvetisz2v3.execute-api.us-west-2.amazonaws.com/dev/chat/workspaces/${workspaceId}/chat-ui-config`;
+    const apiUrl = `https://0n6mwlmpv2.execute-api.us-west-2.amazonaws.com/dev/chat/workspaces/${workspaceId}/chat-ui-config`;
     
     try {
       const response = await fetch(apiUrl);
@@ -642,7 +799,60 @@
     }
   }
 
+async function fetchChatHistory(config, threadId) {
+    if (!threadId || !config.workspaceId || !config.agentId) {
+        console.log('âš ï¸ Missing required parameters for chat history');
+        return null;
+    }
 
+    try {
+        const historyUrl = `https://ds4i1tjnjs35d.cloudfront.net/workspaces/${config.workspaceId}/chat-agents/${config.agentId}/threads/${threadId}`;
+        
+        const response = await fetch(historyUrl, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${config.accessToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            console.warn('âŒ Failed to fetch chat history:', response.status);
+            return null;
+        }
+
+        const history = await response.json();
+        
+        // Format the messages exactly as deep-chat expects them
+        const formattedMessages = [];
+        
+        history.items.forEach(item => {
+            if (item.input && item.input.length > 0) {
+                formattedMessages.push({
+                    text: item.input[0].content,
+                    role: 'user'
+                });
+            }
+            if (item.output) {
+                formattedMessages.push({
+                    text: item.output,
+                    role: 'ai'
+                });
+            }
+        });
+
+        console.log('ðŸ“ Formatted messages for deep-chat:', formattedMessages);
+
+       
+
+        return {
+            messages: formattedMessages
+        };
+    } catch (error) {
+        console.error('âŒ Error fetching chat history:', error);
+        return null;
+    }
+}
 
   // Load deep-chat web component script
   function loadDeepChatScript() {
@@ -740,6 +950,9 @@
       // Configure deep-chat
       configureDeepChat(deepChat, config);
       
+      // retrieve chat history if threadId is available
+      fetchChatHistory(config, window.currentThreadId)
+
       // Add deep-chat to the container
       elements.chatContainer.appendChild(deepChat);
 
