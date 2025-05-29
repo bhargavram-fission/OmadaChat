@@ -1,14 +1,18 @@
 /**
  * Omada Chat Widget - A customizable chat interface for websites
- * Version: 1.2.1 - Fixed image overflow issues
+ * Version: 1.2.1 - changed with dev.io URLs
  * 
  * This script creates a floating chat widget that can be easily integrated into any website.
  * It provides configuration options for appearance, behavior, and connection to backend services.
  * Supports SSE streaming and can be used with any framework.
  * Supports loading configuration from API by workspaceId.
  * Enhanced with proper thread ID management for conversation continuity.
- * Fixed image overflow issues in chat messages.
+ * This function is adapted from  DeepChat by OvidijusParsiunas , MIT License.
+* Original code: https://github.com/OvidijusParsiunas/deep-chat (MIT License)
+* Modified by Omada Inc, 2025.
+
  */
+
 
 (function() {
   // Prevent multiple initializations
@@ -23,7 +27,7 @@
 
   // Default configuration
   const DEFAULT_CONFIG = {
-    toggleText: "ðŸ’¬",
+    toggleText: "💬",
     introMessage: "Thank you for contacting us. This is Ana, your friendly AI assistant. How can I assist you today?",
     websocket: false,
     stream: true,
@@ -397,7 +401,7 @@
     }
     
     if (config.agentId && config.workspaceId) {
-      const baseUrl = config.baseUrl || "https://ds4i1tjnjs35d.cloudfront.net";
+      const baseUrl = config.baseUrl || "https://chat.omada-dev.io";
       return `${baseUrl}/sse/workspaces/${config.workspaceId}/chat-agents/${config.agentId}/chat/stream`;
     }
     
@@ -713,18 +717,18 @@
       
       return response;
     }`;
-
-      const storedThreadId = window.currentThreadId 
+console.log('omada local threadid', localStorage.getItem('omada-threadId'));
+      const storedThreadId = window.currentThreadId || localStorage.getItem('omada-threadId');
 // Check if threadId is available in local storage
 if (storedThreadId) {
     fetchChatHistory(config, storedThreadId).then(history => {
         if (history && history.messages) {
             // Use the actual history from API instead of hardcoded messages
-            deepChat.setAttribute('history', JSON.stringify(history.messages));
-            console.log('ðŸ“ Set chat history from API:', history);
+            // deepChat.setAttribute('history', JSON.stringify(history.messages));
+            console.log('📝 Set chat history from API:', history);
         }
     }).catch(error => {
-        console.error('âŒ Failed to load chat history:', error);
+        console.error('❌ Failed to load chat history:', error);
     });
 }
     // Connect configuration with streaming support
@@ -779,11 +783,16 @@ if (storedThreadId) {
   }
 
   // Fetch configuration from API by workspaceId
-  async function fetchConfigFromAPI(workspaceId) {
-    const apiUrl = `https://0n6mwlmpv2.execute-api.us-west-2.amazonaws.com/dev/chat/workspaces/${workspaceId}/chat-ui-config`;
-    
+  async function fetchConfigFromAPI(workspaceId, agent_id,accessToken) {
+    const apiUrl = `https://chat.omada-dev.io/sse/workspaces/${workspaceId}/chat-agents/${agent_id}/ui`;
     try {
-      const response = await fetch(apiUrl);
+       const response = await fetch(apiUrl, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
       
       if (!response.ok) { 
         console.warn(`Failed to fetch config for workspaceId: ${workspaceId}. Status: ${response.status}`);
@@ -801,12 +810,12 @@ if (storedThreadId) {
 
 async function fetchChatHistory(config, threadId) {
     if (!threadId || !config.workspaceId || !config.agentId) {
-        console.log('âš ï¸ Missing required parameters for chat history');
+        console.log('⚠️ Missing required parameters for chat history');
         return null;
     }
 
     try {
-        const historyUrl = `https://ds4i1tjnjs35d.cloudfront.net/workspaces/${config.workspaceId}/chat-agents/${config.agentId}/threads/${threadId}`;
+        const historyUrl = `https://chat.omada-dev.io/workspaces/${config.workspaceId}/chat-agents/${config.agentId}/threads/${threadId}`;
         
         const response = await fetch(historyUrl, {
             method: 'GET',
@@ -817,7 +826,7 @@ async function fetchChatHistory(config, threadId) {
         });
 
         if (!response.ok) {
-            console.warn('âŒ Failed to fetch chat history:', response.status);
+            console.warn('❌ Failed to fetch chat history:', response.status);
             return null;
         }
 
@@ -841,7 +850,7 @@ async function fetchChatHistory(config, threadId) {
             }
         });
 
-        console.log('ðŸ“ Formatted messages for deep-chat:', formattedMessages);
+        console.log('📝 Formatted messages for deep-chat:', formattedMessages);
 
        
 
@@ -849,7 +858,7 @@ async function fetchChatHistory(config, threadId) {
             messages: formattedMessages
         };
     } catch (error) {
-        console.error('âŒ Error fetching chat history:', error);
+        console.error('❌ Error fetching chat history:', error);
         return null;
     }
 }
@@ -934,7 +943,7 @@ async function fetchChatHistory(config, threadId) {
       let apiConfig = null;
       if (userConfig.workspaceId) {
         try {
-          apiConfig = await fetchConfigFromAPI(userConfig.workspaceId);
+          apiConfig = await fetchConfigFromAPI(userConfig.workspaceId,userConfig.agentId,userConfig.accessToken);
         } catch (error) {
           console.warn('Failed to fetch config from API, using defaults:', error);
         }
@@ -984,7 +993,7 @@ async function fetchChatHistory(config, threadId) {
         reloadConfig: async () => {
           if (config.workspaceId) {
             try {
-              const newApiConfig = await fetchConfigFromAPI(config.workspaceId);
+              const newApiConfig = await fetchConfigFromAPI(config.workspaceId,config.agentId,config.accessToken);
               if (newApiConfig) {
                 const updatedConfig = applyAPIConfig(config, newApiConfig);
                 Object.assign(config, updatedConfig);
